@@ -9,9 +9,17 @@ const { initializeScheduler } = require('./services/schedulerService');
 
 const app = express();
 
+const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
+	.split(',')
+	.map(origin => origin.trim())
+	.filter(Boolean);
+
+const defaultDevOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+const corsOrigins = allowedOrigins.length > 0 ? allowedOrigins : defaultDevOrigins;
+
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  origin: corsOrigins,
   credentials: true
 }));
 
@@ -52,6 +60,10 @@ function connectToMongo() {
 }
 
 connectToMongo();
+
+app.get('/api/health', (_req, res) => {
+	res.status(200).json({ status: 'ok' });
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
