@@ -117,6 +117,11 @@ const Budget = () => {
     setShowEditProfile(true);
   };
 
+  const handleOpenNotifications = () => {
+    setShowProfileDropdown(false);
+    navigate('/home', { state: { openNotifications: true } });
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
@@ -342,6 +347,10 @@ const Budget = () => {
                 <button onClick={handleEditProfile} className="dropdown-item">
                   <span className="dropdown-icon">⚙️</span>
                   <span>Edit Profile</span>
+                </button>
+                <button onClick={handleOpenNotifications} className="dropdown-item">
+                  <span className="dropdown-icon">🔔</span>
+                  <span>Email Notifications</span>
                 </button>
                 <div className="dropdown-divider"></div>
                 <button onClick={handleLogout} className="dropdown-item logout">

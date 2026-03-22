@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserData, clearAuthData, formatCurrency } from '../utils/auth';
 import TransactionModal from './TransactionModal';
 import './styles/Home.css';
@@ -36,6 +36,7 @@ const Home = () => {
     includeBudgets: true
   });
   const navigate = useNavigate();
+  const location = useLocation();
 
   const trimmedName = user?.name?.trim();
   const emailPrefix = user?.email?.split('@')[0];
@@ -108,6 +109,13 @@ const Home = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (location.state?.openNotifications) {
+      setShowNotificationModal(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   // Handle escape key separately
   useEffect(() => {

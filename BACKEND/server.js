@@ -61,6 +61,14 @@ function connectToMongo() {
 
 connectToMongo();
 
+app.get('/', (_req, res) => {
+	res.status(200).json({
+		status: 'ok',
+		message: 'Finance Tracker backend is running',
+		health: '/api/health'
+	});
+});
+
 app.get('/api/health', (_req, res) => {
 	res.status(200).json({ status: 'ok' });
 });

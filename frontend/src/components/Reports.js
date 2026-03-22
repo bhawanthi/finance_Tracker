@@ -18,6 +18,11 @@ const Reports = () => {
   const [lastPredictionRefresh, setLastPredictionRefresh] = useState(null);
   const isFetchingRef = useRef(false);
   const navigate = useNavigate();
+  
+  const handleOpenNotifications = () => {
+    setShowProfileDropdown(false);
+    navigate('/home', { state: { openNotifications: true } });
+  };
 
   const getPeriodLabel = (period) => {
     if (period === '30d') return 'Last 30 Days';
@@ -877,6 +882,10 @@ Keep this information confidential and secure.
                 <button onClick={() => alert('Edit Profile feature coming soon!')} className="dropdown-item">
                   <span className="dropdown-icon">⚙️</span>
                   <span>Edit Profile</span>
+                </button>
+                <button onClick={handleOpenNotifications} className="dropdown-item">
+                  <span className="dropdown-icon">🔔</span>
+                  <span>Email Notifications</span>
                 </button>
                 <div className="dropdown-divider"></div>
                 <button onClick={handleLogout} className="dropdown-item logout">
