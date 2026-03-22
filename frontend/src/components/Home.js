@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { getUserData, clearAuthData, formatCurrency } from '../utils/auth';
 import TransactionModal from './TransactionModal';
 import './styles/Home.css';
-import MoneyVueLogo from '../assets/Finance_Logo.png';
 import { sendNotificationEmail } from '../utils/sendEmail';
 
 const Home = () => {
@@ -23,6 +22,7 @@ const Home = () => {
     name: '',
     email: '',
     monthlySalary: '',
+    currency: 'USD',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
@@ -37,6 +37,17 @@ const Home = () => {
   });
   const navigate = useNavigate();
 
+  const trimmedName = user?.name?.trim();
+  const emailPrefix = user?.email?.split('@')[0];
+  const displayName = trimmedName || emailPrefix || 'User';
+
+  const avatarInitials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'U';
+
   const handleCloseEditProfile = useCallback(() => {
     setShowEditProfile(false);
     // Reset form when closing
@@ -44,6 +55,7 @@ const Home = () => {
       name: user?.name || '',
       email: user?.email || '',
       monthlySalary: user?.monthlySalary || '',
+      currency: user?.currency || 'USD',
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
@@ -58,6 +70,7 @@ const Home = () => {
         name: userData.name || '',
         email: userData.email || '',
         monthlySalary: userData.monthlySalary || '',
+        currency: userData.currency || 'USD',
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
@@ -116,7 +129,7 @@ const Home = () => {
   const fetchTransactionStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/transactions/stats?period=monthly', {
+      const response = await fetch('/api/transactions/stats?period=monthly', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -175,7 +188,7 @@ const Home = () => {
   const fetchRecentTransactions = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/transactions?limit=5', {
+      const response = await fetch('/api/transactions?limit=5', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -195,7 +208,7 @@ const Home = () => {
   const fetchGoals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/goals', {
+      const response = await fetch('/api/goals', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -213,7 +226,7 @@ const Home = () => {
   const fetchBudgets = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/budgets', {
+      const response = await fetch('/api/budgets', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -247,7 +260,7 @@ const Home = () => {
   const fetchNotificationSettings = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/notifications/settings', {
+      const response = await fetch('/api/notifications/settings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -289,7 +302,7 @@ const Home = () => {
       }
 
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/notifications/settings', {
+      const response = await fetch('/api/notifications/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -297,14 +310,18 @@ const Home = () => {
         },
         body: JSON.stringify(notificationSettings)
       });
-      
-      const data = await response.json();
+
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : { msg: await response.text() };
       
       if (response.ok) {
         alert('✅ Notification settings saved successfully!');
         setShowNotificationModal(false);
       } else {
-        alert(`❌ Failed to save: ${data.msg || 'Unknown error'}`);
+        const errorDetail = data.error ? ` (${data.error})` : '';
+        alert(`❌ Failed to save: ${data.msg || 'Unknown error'}${errorDetail}`);
       }
     } catch (error) {
       console.error('Error saving notification settings:', error);
@@ -318,54 +335,72 @@ const Home = () => {
       alert('⚠️ Please enter a valid email address first');
       return;
     }
-        // Build professional AI-powered content
-        const baseSalary = user?.monthlySalary || 0;
-        const incomeTotal = transactionStats?.totals?.find(t => t._id === 'income')?.total || 0;
-        let salaryTips = '';
-        if (notificationSettings.includeSalaryTips) {
-          salaryTips = `Your base salary is $${baseSalary}. AI recommends the 50/30/20 rule: $${(baseSalary * 0.5).toFixed(2)} for essentials, $${(baseSalary * 0.3).toFixed(2)} for goals, $${(baseSalary * 0.2).toFixed(2)} for savings.`;
-        }
+    const toNumber = (value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
 
-        let goalsSummary = '';
-        if (notificationSettings.includeGoals) {
-          goalsSummary = goalsData?.length
-            ? goalsData.map(g => `• ${g.title}: ${g.progress}% complete`).join('\n')
-            : 'No goals set yet. Start by adding a financial goal!';
-        }
+    // Build professional AI-powered content from real API fields
+    const baseSalary = toNumber(user?.monthlySalary);
+    let salaryTips = '';
+    if (notificationSettings.includeSalaryTips) {
+      salaryTips = `Your base salary is ${formatCurrency(baseSalary)}. AI recommends the 50/30/20 rule: ${formatCurrency(baseSalary * 0.5)} for essentials, ${formatCurrency(baseSalary * 0.3)} for goals, ${formatCurrency(baseSalary * 0.2)} for savings.`;
+    }
 
-        let budgetsSummary = '';
-        if (notificationSettings.includeBudgets) {
-          budgetsSummary = budgetsData?.length
-            ? budgetsData.map(b => `• ${b.category}: $${b.spent} spent of $${b.budgetedAmount}`).join('\n')
-            : 'No budgets set yet. Create a budget to track your spending!';
-        }
+    let goalsSummary = '';
+    if (notificationSettings.includeGoals) {
+      goalsSummary = goalsData?.length
+        ? goalsData.map((goal) => {
+          const currentAmount = toNumber(goal.currentAmount);
+          const targetAmount = toNumber(goal.targetAmount);
+          const progress = targetAmount > 0
+            ? Math.min((currentAmount / targetAmount) * 100, 100)
+            : toNumber(goal.progressPercentage);
 
-        try {
-          await sendNotificationEmail({
-            email: notificationSettings.email,
-            name: user?.name || 'User',
-            salaryTips,
-            goals: goalsSummary,
-            budgets: budgetsSummary,
-            message: 'This is your AI-powered finance notification from MoneyVue.'
-          });
-          alert('✅ Test email sent successfully! Check your inbox.');
-        } catch (error) {
-          alert('❌ Failed to send test email: ' + (error?.text || error?.message || 'Unknown error'));
-        }
+          return `• ${goal.name || 'Goal'}: ${progress.toFixed(1)}% complete (${formatCurrency(currentAmount)} / ${formatCurrency(targetAmount)})`;
+        }).join('\n')
+        : 'No goals set yet. Start by adding a financial goal!';
+    }
+
+    let budgetsSummary = '';
+    if (notificationSettings.includeBudgets) {
+      budgetsSummary = budgetsData?.length
+        ? budgetsData.map((budget) => {
+          const spent = toNumber(budget.spent);
+          const allocated = toNumber(budget.amount);
+          return `• ${budget.category || budget.name || 'Budget'}: ${formatCurrency(spent)} spent of ${formatCurrency(allocated)}`;
+        }).join('\n')
+        : 'No budgets set yet. Create a budget to track your spending!';
+    }
+
+    try {
+      await sendNotificationEmail({
+        email: notificationSettings.email,
+        name: user?.name || 'User',
+        salaryTips,
+        goals: goalsSummary,
+        budgets: budgetsSummary,
+        message: 'This is your AI-powered finance notification from MoneyVue.'
+      });
+      alert('✅ Test email sent successfully! Check your inbox.');
+    } catch (error) {
+      alert('❌ Failed to send test email: ' + (error?.text || error?.message || 'Unknown error'));
+    }
   };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     
-    // Validate password fields if user wants to change password
-    if (editFormData.newPassword || editFormData.currentPassword || editFormData.confirmPassword) {
+    // Validate name and email (required)
+    if (!editFormData.name?.trim() || !editFormData.email?.trim()) {
+      alert('Name and email are required');
+      return;
+    }
+    
+    // Validate password fields ONLY if user starts changing password
+    if (editFormData.newPassword) {
       if (!editFormData.currentPassword) {
         alert('Current password is required to change password');
-        return;
-      }
-      if (!editFormData.newPassword) {
-        alert('New password is required');
         return;
       }
       if (editFormData.newPassword !== editFormData.confirmPassword) {
@@ -383,7 +418,8 @@ const Home = () => {
       const requestData = {
         name: editFormData.name,
         email: editFormData.email,
-        monthlySalary: editFormData.monthlySalary
+        monthlySalary: editFormData.monthlySalary,
+        currency: editFormData.currency || 'USD'
       };
 
       // Include password fields only if user wants to change password
@@ -392,7 +428,7 @@ const Home = () => {
         requestData.newPassword = editFormData.newPassword;
       }
 
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -404,13 +440,14 @@ const Home = () => {
       if (response.ok) {
         const updatedUser = await response.json();
         setUser(updatedUser.user);
-        localStorage.setItem('userData', JSON.stringify(updatedUser.user));
+        localStorage.setItem('user', JSON.stringify(updatedUser.user));
         setShowEditProfile(false);
         // Reset form
         setEditFormData({
           name: updatedUser.user.name || '',
           email: updatedUser.user.email || '',
           monthlySalary: updatedUser.user.monthlySalary || '',
+          currency: updatedUser.user.currency || 'USD',
           currentPassword: '',
           newPassword: '',
           confirmPassword: ''
@@ -459,7 +496,6 @@ const Home = () => {
       <nav className="navbar">
         <div className="nav-brand">
           <div className="logo">
-            <img src={MoneyVueLogo} alt="MoneyVue" className="logo-image" />
             <span className="logo-text">MONIVUE</span>
           </div>
         </div>
@@ -503,7 +539,7 @@ const Home = () => {
           </div>
           <div className="user-info">
             <div className="user-details">
-              <span className="user-greeting">{getTimeOfDayGreeting()}, {user.name}!</span>
+              <span className="user-greeting">{getTimeOfDayGreeting()}, {displayName}!</span>
               <div className="current-time">{currentTime.toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -515,9 +551,15 @@ const Home = () => {
           
           {/* Profile Dropdown */}
           <div className="profile-container">
-            <button onClick={toggleProfileDropdown} className="profile-button">
+            <button
+              onClick={toggleProfileDropdown}
+              className={`profile-button ${showProfileDropdown ? 'open' : ''}`}
+              aria-haspopup="menu"
+              aria-expanded={showProfileDropdown}
+              aria-label="Open profile menu"
+            >
               <div className="profile-avatar">
-                <span className="avatar-text">{user.name?.charAt(0).toUpperCase()}</span>
+                <span className="avatar-text">{avatarInitials}</span>
               </div>
               <span className="profile-chevron">▼</span>
             </button>
@@ -526,10 +568,10 @@ const Home = () => {
               <div className="profile-dropdown">
                 <div className="dropdown-header">
                   <div className="dropdown-avatar">
-                    <span className="dropdown-avatar-text">{user.name?.charAt(0).toUpperCase()}</span>
+                    <span className="dropdown-avatar-text">{avatarInitials}</span>
                   </div>
                   <div className="dropdown-info">
-                    <span className="dropdown-name">{user.name}</span>
+                    <span className="dropdown-name">{displayName}</span>
                     <span className="dropdown-email">{user.email}</span>
                   </div>
                 </div>
@@ -601,7 +643,7 @@ const Home = () => {
               <div className="metric-icon">🎯</div>
               <div className="metric-info">
                 <h3>Savings Goal</h3>
-                <span className="metric-value">$0.00</span>
+                <span className="metric-value">{formatCurrency(0)}</span>
                 <span className="metric-change neutral">Set your goal</span>
               </div>
             </div>
@@ -701,7 +743,7 @@ const Home = () => {
                         <div className="goal-header">
                           <span className="goal-name">{goal.title}</span>
                           <span className="goal-target">
-                            ${(goal.currentAmount || 0).toLocaleString()} / ${goal.targetAmount.toLocaleString()}
+                            {formatCurrency(goal.currentAmount || 0)} / {formatCurrency(goal.targetAmount)}
                           </span>
                         </div>
                         <div className="goal-progress">
@@ -839,6 +881,49 @@ const Home = () => {
                 />
               </div>
 
+              <div className="form-group">
+                <label htmlFor="currency">💱 Preferred Currency</label>
+                <select
+                  id="currency"
+                  name="currency"
+                  value={editFormData.currency}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="USD">🇺🇸 USD - US Dollar</option>
+                  <option value="EUR">🇪🇺 EUR - Euro</option>
+                  <option value="GBP">🇬🇧 GBP - British Pound</option>
+                  <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
+                  <option value="CNY">🇨🇳 CNY - Chinese Yuan</option>
+                  <option value="INR">🇮🇳 INR - Indian Rupee</option>
+                  <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
+                  <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
+                  <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
+                  <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
+                  <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
+                  <option value="ZAR">🇿🇦 ZAR - South African Rand</option>
+                  <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
+                  <option value="HKD">🇭🇰 HKD - Hong Kong Dollar</option>
+                  <option value="KRW">🇰🇷 KRW - South Korean Won</option>
+                  <option value="SEK">🇸🇪 SEK - Swedish Krona</option>
+                  <option value="NOK">🇳🇴 NOK - Norwegian Krone</option>
+                  <option value="DKK">🇩🇰 DKK - Danish Krone</option>
+                  <option value="PLN">🇵🇱 PLN - Polish Zloty</option>
+                  <option value="THB">🇹🇭 THB - Thai Baht</option>
+                  <option value="MYR">🇲🇾 MYR - Malaysian Ringgit</option>
+                  <option value="IDR">🇮🇩 IDR - Indonesian Rupiah</option>
+                  <option value="PHP">🇵🇭 PHP - Philippine Peso</option>
+                  <option value="TRY">🇹🇷 TRY - Turkish Lira</option>
+                  <option value="RUB">🇷🇺 RUB - Russian Ruble</option>
+                  <option value="AED">🇦🇪 AED - UAE Dirham</option>
+                  <option value="SAR">🇸🇦 SAR - Saudi Riyal</option>
+                  <option value="EGP">🇪🇬 EGP - Egyptian Pound</option>
+                  <option value="NGN">🇳🇬 NGN - Nigerian Naira</option>
+                  <option value="KES">🇰🇪 KES - Kenyan Shilling</option>
+                  <option value="LKR">🇱🇰 LKR - Sri Lankan Rupee</option>
+                </select>
+              </div>
+
               <div className="password-section">
                 <div className="password-header">
                   <h3>🔒 Change Password</h3>
@@ -972,6 +1057,7 @@ const Home = () => {
 
               <div className="form-group">
                 <label className="toggle-label">
+                  <span className="toggle-text">Enable Email Notifications</span>
                   <input
                     type="checkbox"
                     checked={notificationSettings.enabled}
@@ -982,7 +1068,6 @@ const Home = () => {
                     className="toggle-checkbox"
                   />
                   <span className="toggle-switch"></span>
-                  <span className="toggle-text">Enable Email Notifications</span>
                 </label>
               </div>
 

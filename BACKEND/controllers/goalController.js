@@ -8,7 +8,7 @@ const getGoals = async (req, res) => {
     const { status = 'active', category, priority } = req.query;
 
     let filter = { userId };
-    if (status) filter.status = status;
+    if (status && status !== 'all') filter.status = status;
     if (category) filter.category = category;
     if (priority) filter.priority = priority;
 

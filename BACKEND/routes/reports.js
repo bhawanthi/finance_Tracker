@@ -19,6 +19,10 @@ const getRandomColor = () => {
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
+const formatCurrency = (amount) => {
+  return `LKR ${Math.round(amount).toLocaleString()}`;
+};
+
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -983,6 +987,530 @@ router.get('/excel', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error generating Excel:', error);
     res.status(500).json({ message: 'Error generating Excel report' });
+  }
+});
+
+// GET /api/reports/investment-predictions - AI Investment Recommendations
+router.get('/investment-predictions', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    console.log(`Generating investment predictions for user: ${userId}`);
+
+    // Calculate user's financial profile based on last 90 days
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 90);
+
+    const transactions = await Transaction.find({ 
+      userId: userId,
+      date: { $gte: startDate, $lte: endDate }
+    });
+
+    // Calculate monthly income and expenses
+    const totalIncome = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+    
+    const totalExpenses = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+    const monthlyIncome = totalIncome / 3; // Average over 90 days
+    const monthlyExpenses = totalExpenses / 3;
+    const monthlySavings = monthlyIncome - monthlyExpenses;
+    const savingsRate = monthlyIncome > 0 ? ((monthlySavings / monthlyIncome) * 100).toFixed(1) : 0;
+
+    // Determine risk profile based on savings rate
+    let riskProfile = 'Moderate';
+    if (savingsRate >= 30) {
+      riskProfile = 'Aggressive';
+    } else if (savingsRate < 15) {
+      riskProfile = 'Conservative';
+    }
+
+    // Sri Lanka Investment Opportunities
+    const sriLankaInvestments = [
+      {
+        name: 'NSB Savings Account',
+        icon: '🏦',
+        risk: 'Low',
+        description: 'National Savings Bank offers one of the highest savings account interest rates in Sri Lanka with government backing and deposit insurance.',
+        expectedReturn: '8-10% p.a.',
+        minInvestment: 'LKR 100',
+        timeHorizon: 'Short-term (Anytime)',
+        features: [
+          'Government guaranteed deposits',
+          'Easy access to funds',
+          'No lock-in period',
+          'Interest paid monthly',
+          'Available at all NSB branches'
+        ]
+      },
+      {
+        name: 'Fixed Deposits (Sri Lankan Banks)',
+        icon: '💰',
+        risk: 'Low',
+        description: 'Fixed deposits with commercial banks like Bank of Ceylon, People\'s Bank, or Commercial Bank offering secure returns with guaranteed interest.',
+        expectedReturn: '10-15% p.a.',
+        minInvestment: 'LKR 10,000',
+        timeHorizon: 'Medium-term (3-12 months)',
+        features: [
+          'Fixed guaranteed returns',
+          'CBSL deposit insurance up to LKR 1.1M',
+          'Flexible tenure options',
+          'Higher rates for senior citizens',
+          'Loan facilities against FD'
+        ]
+      },
+      {
+        name: 'Sri Lanka Government Treasury Bills',
+        icon: '📜',
+        risk: 'Low',
+        description: 'Short-term government securities issued by Central Bank of Sri Lanka. Considered the safest investment with sovereign guarantee.',
+        expectedReturn: '12-18% p.a.',
+        minInvestment: 'LKR 100,000',
+        timeHorizon: 'Short-term (91-364 days)',
+        features: [
+          'Government backed - zero default risk',
+          'Tax-free interest income',
+          'Tradable in secondary market',
+          'Available through primary dealers',
+          'Better returns than savings accounts'
+        ]
+      },
+      {
+        name: 'Unit Trusts / Mutual Funds (Sri Lanka)',
+        icon: '📊',
+        risk: 'Moderate',
+        description: 'Professionally managed funds investing in stocks, bonds, and money market instruments. Options include equity funds, balanced funds, and money market funds.',
+        expectedReturn: '12-25% p.a.',
+        minInvestment: 'LKR 5,000',
+        timeHorizon: 'Medium to Long-term (1-5 years)',
+        features: [
+          'Professional fund management',
+          'Diversification across assets',
+          'Regulated by SEC Sri Lanka',
+          'Easy entry and exit',
+          'Options: equity, debt, balanced funds'
+        ]
+      },
+      {
+        name: 'Colombo Stock Exchange (CSE)',
+        icon: '📈',
+        risk: 'High',
+        description: 'Invest in blue-chip companies listed on CSE like JKH, Dialog, CTC, and Commercial Bank. Suitable for long-term wealth creation.',
+        expectedReturn: '15-30% p.a.',
+        minInvestment: 'LKR 10,000',
+        timeHorizon: 'Long-term (3+ years)',
+        features: [
+          'Ownership in leading companies',
+          'Dividend income potential',
+          'Capital appreciation opportunities',
+          'Online trading platforms available',
+          'Regulated by SEC Sri Lanka'
+        ]
+      },
+      {
+        name: 'EPF Voluntary Contributions',
+        icon: '🏛️',
+        risk: 'Low',
+        description: 'Employees\' Provident Fund accepts voluntary contributions beyond mandatory deductions. Excellent long-term savings with tax benefits.',
+        expectedReturn: '9-11% p.a.',
+        minInvestment: 'Any amount',
+        timeHorizon: 'Long-term (Until retirement)',
+        features: [
+          'Government managed fund',
+          'Tax deductible contributions',
+          'Compound interest growth',
+          'Secure retirement savings',
+          'Employer matching (if employed)'
+        ]
+      }
+    ];
+
+    // International Investment Opportunities with detailed buying/selling tips
+    const internationalInvestments = [
+      {
+        name: 'US Stock Market ETFs (S&P 500, NASDAQ)',
+        icon: '🇺🇸',
+        risk: 'Moderate',
+        description: 'Exchange-traded funds tracking S&P 500 (VOO, SPY), NASDAQ-100 (QQQ), or total US market (VTI). Access through Interactive Brokers, TD Ameritrade, or Schwab.',
+        expectedReturn: '8-12% p.a. (Historical average)',
+        minInvestment: '$100 USD (~LKR 32,000)',
+        timeHorizon: 'Long-term (5+ years)',
+        features: [
+          'Exposure to top US companies (Apple, Microsoft, Amazon)',
+          'Diversification across 500+ companies',
+          'Low expense ratios (0.03-0.20% annually)',
+          'Dividend reinvestment available',
+          'Highly liquid - buy/sell anytime during market hours'
+        ],
+        buyingTips: [
+          'Open account with Interactive Brokers or TD Ameritrade (accepts Sri Lankan residents)',
+          'Use Dollar Cost Averaging - invest fixed amount monthly regardless of price',
+          'Buy during market dips (10%+ corrections) for better entry points',
+          'Start with broad market ETFs like VOO or VTI before individual stocks',
+          'Consider fractional shares to start with smaller amounts'
+        ],
+        sellingTips: [
+          'Hold for minimum 5 years to benefit from compounding',
+          'Sell only when you need funds or to rebalance portfolio',
+          'Avoid panic selling during market crashes',
+          'Take partial profits when gains exceed 50-100%',
+          'Be aware of US capital gains tax (consult tax advisor)'
+        ],
+        salaryRecommendation: monthlyIncome >= 150000 ? 'Allocate 15-25% of monthly savings' : monthlyIncome >= 75000 ? 'Allocate 10-15% of monthly savings' : 'Start with $50-100 monthly'
+      },
+      {
+        name: 'Global Index Funds (World Stock Market)',
+        icon: '🌏',
+        risk: 'Moderate',
+        description: 'Diversified funds investing globally: Vanguard Total World Stock (VT), MSCI World Index (URTH), iShares MSCI ACWI (ACWI). Covers developed and emerging markets.',
+        expectedReturn: '7-10% p.a.',
+        minInvestment: '$500 USD (~LKR 160,000)',
+        timeHorizon: 'Long-term (5-10 years)',
+        features: [
+          'Geographic diversification across 50+ countries',
+          'Exposure to US, Europe, Asia, emerging markets',
+          'Reduced single-country risk',
+          'Currency diversification benefits',
+          'Professional quarterly rebalancing'
+        ],
+        buyingTips: [
+          'Ideal for first-time international investors',
+          'Buy during global market uncertainties for better value',
+          'Set up automatic monthly investments',
+          'Use limit orders to buy at your target price',
+          'Research country allocations before investing'
+        ],
+        sellingTips: [
+          'Hold for 7-10 years minimum for optimal returns',
+          'Rebalance annually to maintain target allocation',
+          'Sell only during major life events or retirement',
+          'Consider tax implications before selling',
+          'Track global economic indicators before decisions'
+        ],
+        salaryRecommendation: monthlyIncome >= 200000 ? 'Allocate 10-20% of monthly savings' : monthlyIncome >= 100000 ? 'Allocate 5-10% of monthly savings' : 'Build emergency fund first'
+      },
+      {
+        name: 'US Treasury Bonds (Government Bonds)',
+        icon: '🏦',
+        risk: 'Low',
+        description: 'US Government bonds with guaranteed returns. Options: T-Bills (1 year), T-Notes (2-10 years), T-Bonds (20-30 years). Available via TreasuryDirect.gov or brokers.',
+        expectedReturn: '4-6% p.a. (Currently)',
+        minInvestment: '$100 USD (~LKR 32,000)',
+        timeHorizon: 'Short to Long-term (1-30 years)',
+        features: [
+          'Backed by US government - zero default risk',
+          'Predictable fixed income stream',
+          'Currency hedge in US Dollars',
+          'Low volatility compared to stocks',
+          'Interest paid semi-annually'
+        ],
+        buyingTips: [
+          'Buy when interest rates are high for better yields',
+          'Ladder bonds with different maturity dates',
+          'Purchase directly from TreasuryDirect.gov (no fees)',
+          'Consider inflation-protected bonds (TIPS) during high inflation',
+          'Ideal for conservative portion of portfolio'
+        ],
+        sellingTips: [
+          'Hold until maturity for guaranteed return',
+          'Sell in secondary market if interest rates drop (bond value increases)',
+          'Use as collateral for loans if needed',
+          'Reinvest maturity proceeds in higher-yielding bonds',
+          'No early withdrawal penalty if sold in secondary market'
+        ],
+        salaryRecommendation: monthlyIncome >= 100000 ? 'Allocate 5-15% for stability' : 'Good option for emergency fund parking'
+      },
+      {
+        name: 'Gold & Precious Metals ETFs',
+        icon: '🥇',
+        risk: 'Moderate',
+        description: 'Gold-backed ETFs (GLD, IAU), Silver (SLV), Platinum. Physical gold exposure without storage hassles. Hedge against inflation and currency devaluation.',
+        expectedReturn: '5-8% p.a. (Variable)',
+        minInvestment: '$50 USD (~LKR 16,000)',
+        timeHorizon: 'Long-term (3-5 years)',
+        features: [
+          'Inflation and currency hedge',
+          'Safe haven during economic uncertainty',
+          'No physical storage or security costs',
+          'Highly liquid and tradable',
+          'Portfolio diversification benefit'
+        ],
+        buyingTips: [
+          'Buy during economic stability when gold prices are lower',
+          'Allocate 5-10% of portfolio maximum',
+          'Dollar cost average to smooth out price volatility',
+          'Consider gold mining stocks (GDX) for higher returns',
+          'Track USD strength - gold typically inverse to dollar'
+        ],
+        sellingTips: [
+          'Sell during economic crises when gold price spikes',
+          'Take profits when gold increases 30%+ in short time',
+          'Rebalance when gold exceeds 10% of portfolio',
+          'Hold as long-term insurance against currency collapse',
+          'Watch central bank policies affecting gold prices'
+        ],
+        salaryRecommendation: 'Allocate 5-10% regardless of salary for portfolio insurance'
+      },
+      {
+        name: 'International Real Estate Investment Trusts (REITs)',
+        icon: '🏢',
+        risk: 'Moderate',
+        description: 'Global REITs investing in commercial properties, apartments, malls, data centers. Examples: VNQ (US), VNQI (International), O (Realty Income). Monthly dividend income.',
+        expectedReturn: '6-10% p.a. + 3-5% dividend yield',
+        minInvestment: '$100 USD (~LKR 32,000)',
+        timeHorizon: 'Medium to Long-term (3-7 years)',
+        features: [
+          'Regular monthly/quarterly dividends (4-6%)',
+          'Real estate exposure without property ownership',
+          'Professional property management',
+          'Geographic and property type diversification',
+          'High liquidity compared to physical property'
+        ],
+        buyingTips: [
+          'Buy when interest rates peak (REITs undervalued)',
+          'Focus on REITs with dividend growth history',
+          'Research property sectors (residential, commercial, industrial)',
+          'Check occupancy rates and rental income trends',
+          'Diversify across property types and geographies'
+        ],
+        sellingTips: [
+          'Sell when interest rates are at historic lows (REITs overvalued)',
+          'Trim positions after 40-50% gains',
+          'Monitor dividend cuts - sell if dividends reduced',
+          'Hold for dividend income during retirement',
+          'Rebalance if REIT allocation exceeds 15% of portfolio'
+        ],
+        salaryRecommendation: monthlyIncome >= 150000 ? 'Allocate 10-15% for income generation' : monthlyIncome >= 75000 ? 'Allocate 5-10%' : 'Consider after building equity position'
+      },
+      {
+        name: 'Cryptocurrency Portfolio (Bitcoin, Ethereum)',
+        icon: '₿',
+        risk: 'High',
+        description: 'Digital assets with high volatility and growth potential. Bitcoin (store of value), Ethereum (smart contracts). Use Coinbase, Binance, or Kraken exchanges.',
+        expectedReturn: '20-50% p.a. (Extremely volatile)',
+        minInvestment: '$50 USD (~LKR 16,000)',
+        timeHorizon: 'Long-term (5-10 years)',
+        features: [
+          'High growth potential but extreme volatility',
+          'Decentralized finance exposure',
+          'Portfolio diversification (uncorrelated to stocks)',
+          'Institutional adoption increasing',
+          '24/7 trading availability'
+        ],
+        buyingTips: [
+          'ONLY invest 3-5% of total portfolio maximum',
+          'Buy during major market crashes (50%+ drops)',
+          'Dollar cost average weekly/monthly - never lump sum',
+          'Use reputable exchanges with insurance (Coinbase, Kraken)',
+          'Store in hardware wallet (Ledger, Trezor) for security',
+          'Research before buying - understand blockchain technology'
+        ],
+        sellingTips: [
+          'Take profits when gains exceed 100-200%',
+          'Sell portions during euphoric bull runs',
+          'Never sell during panic - wait for recovery',
+          'Set stop-loss at 30-40% below purchase price',
+          'Hold Bitcoin long-term, trade altcoins more actively',
+          'Be aware of tax implications (capital gains)'
+        ],
+        salaryRecommendation: monthlyIncome >= 100000 ? 'Max 3-5% for risk capital only' : 'Avoid until emergency fund established'
+      },
+      {
+        name: 'Agricultural Commodity ETFs',
+        icon: '🌾',
+        risk: 'Moderate',
+        description: 'Invest in agricultural commodities: DBA (agriculture basket), CORN, WEAT, SOYB. Exposure to global food demand and farming markets.',
+        expectedReturn: '5-12% p.a. (Seasonal)',
+        minInvestment: '$100 USD (~LKR 32,000)',
+        timeHorizon: 'Medium-term (2-5 years)',
+        features: [
+          'Exposure to global food demand',
+          'Inflation hedge through commodity prices',
+          'Diversification from stocks and bonds',
+          'Benefit from population growth trends',
+          'Seasonal price patterns for trading opportunities'
+        ],
+        buyingTips: [
+          'Buy during harvest seasons when prices are low',
+          'Invest before planting seasons for better returns',
+          'Monitor weather patterns and crop reports',
+          'Diversify across different crops (grains, soft commodities)',
+          'Watch global supply/demand dynamics'
+        ],
+        sellingTips: [
+          'Sell before peak harvest when prices are high',
+          'Take profits during drought or supply shortage spikes',
+          'Exit positions when global inventories are excessive',
+          'Rebalance when commodity allocation exceeds 5-8%',
+          'Monitor government policies on farming subsidies'
+        ],
+        salaryRecommendation: 'Allocate 3-7% for commodity diversification'
+      },
+      {
+        name: 'Sustainable Farming Investment Platforms',
+        icon: '🚜',
+        risk: 'Moderate-High',
+        description: 'Crowdfunded farming projects via FarmTogether, AcreTrader, or Farmfolio. Invest in real farmland and agricultural operations for passive income.',
+        expectedReturn: '8-15% p.a. + land appreciation',
+        minInvestment: '$5,000-15,000 USD',
+        timeHorizon: 'Long-term (5-10 years)',
+        features: [
+          'Direct farmland ownership or shares',
+          'Annual crop revenue distribution',
+          'Land appreciation potential',
+          'Professional farm management',
+          'Sustainable and organic farming focus'
+        ],
+        buyingTips: [
+          'Research platform track record and past returns',
+          'Invest in established crop types (almonds, soybeans, corn)',
+          'Diversify across multiple farms and regions',
+          'Understand water rights and soil quality',
+          'Check farm management team experience',
+          'Review detailed crop projections and market demand'
+        ],
+        sellingTips: [
+          'Typically 5-10 year lock-in period',
+          'Secondary market available on some platforms',
+          'Sell when land appreciation exceeds 30-40%',
+          'Exit if farm underperforms for 2+ consecutive years',
+          'Consider tax benefits before selling (1031 exchange in US)'
+        ],
+        salaryRecommendation: monthlyIncome >= 250000 ? 'Consider 5-10% allocation' : 'Build liquid assets first'
+      }
+    ];
+
+    // Enhanced Investment tips based on user profile and salary
+    const tips = [
+      {
+        icon: '🎯',
+        title: 'Start with Emergency Fund',
+        description: `With monthly income of ${formatCurrency(monthlyIncome)}, save 3-6 months expenses (${formatCurrency(monthlyExpenses * 4)}) in NSB or bank savings before investing.`
+      },
+      {
+        icon: '💰',
+        title: 'Salary-Based Investment Strategy',
+        description: monthlyIncome >= 200000 
+          ? 'High income earner: Allocate 60% domestic (FDs, stocks), 30% international (US ETFs, REITs), 10% alternative (gold, crypto).'
+          : monthlyIncome >= 100000
+          ? 'Mid income: Focus 70% domestic (FDs, unit trusts), 25% international (index funds), 5% gold as hedge.'
+          : 'Entry level: Build 80% domestic savings (NSB, FDs), 15% SL stocks, 5% gold. Avoid international until savings increase.'
+      },
+      {
+        icon: '📊',
+        title: 'Dollar Cost Averaging (DCA)',
+        description: 'Don\'t try to time the market. Invest a fixed amount monthly regardless of price. This reduces risk and takes emotion out of investing. Example: LKR 10,000/month into unit trust or $50/month into US ETF.'
+      },
+      {
+        icon: '🛒',
+        title: 'When to BUY Investments',
+        description: '✓ Market corrections (10-20% drops) ✓ During economic uncertainty when prices are low ✓ After bad news but before recovery ✓ Systematically every month (DCA) ✓ When you have surplus savings not needed for 5+ years'
+      },
+      {
+        icon: '💸',
+        title: 'When to SELL Investments',
+        description: '✓ After 50-100%+ gains (take partial profits) ✓ When fundamentals deteriorate ✓ For rebalancing portfolio ✓ Major life expenses (home, education) ✓ NEVER sell in panic during crashes ✓ Hold stocks minimum 5 years'
+      },
+      {
+        icon: '📚',
+        title: 'Diversify Your Portfolio',
+        description: 'Don\'t put all eggs in one basket. Ideal allocation: 40% FDs/Bonds (safe), 30% Stocks (growth), 20% International (diversification), 10% Alternative (gold/land). Adjust based on age and risk tolerance.'
+      },
+      {
+        icon: '⏰',
+        title: 'Time in Market Beats Timing',
+        description: `With ${savingsRate}% savings rate, invest early. LKR 10,000 invested monthly for 20 years at 10% return = LKR 76 lakhs! Same amount after 10 years = only LKR 20 lakhs. Time is your biggest advantage.`
+      },
+      {
+        icon: '🌾',
+        title: 'Agricultural Investment Tips',
+        description: 'For farming investments: ✓ Research crop market demand ✓ Understand seasonal price cycles ✓ Check water availability and soil quality ✓ Diversify crops (rice, vegetables, coconut) ✓ Consider agri-crowdfunding platforms ✓ Monitor government subsidies and policies'
+      },
+      {
+        icon: '💡',
+        title: `Risk Profile: ${riskProfile}`,
+        description: riskProfile === 'Conservative' 
+          ? 'Conservative: 70% Fixed Income (FDs, Bonds), 20% Blue-chip stocks, 10% Gold. Avoid crypto and high-risk stocks.'
+          : riskProfile === 'Moderate'
+          ? 'Moderate: 40% Fixed Income, 40% Stocks/Funds, 15% International, 5% Gold. Balanced risk-reward approach.'
+          : 'Aggressive: 30% Fixed Income, 50% Stocks/Growth funds, 15% International, 5% Crypto/High risk. Accept volatility for higher returns.'
+      },
+      {
+        icon: '📖',
+        title: 'Educate Before Investing',
+        description: 'Read investment prospectus. Understand: ✓ Fees and charges ✓ Lock-in periods ✓ Exit penalties ✓ Tax implications ✓ Historical returns ✓ Risk factors. Never invest in something you don\'t understand. Knowledge = Better returns.'
+      },
+      {
+        icon: '🔄',
+        title: 'Review & Rebalance Quarterly',
+        description: 'Review portfolio every 3 months. Rebalance if any asset class deviates >5% from target. Example: If stocks grow from 40% to 50%, sell 10% and buy bonds to maintain balance. Rebalancing locks profits and maintains risk level.'
+      },
+      {
+        icon: '🌍',
+        title: 'International Investing for Sri Lankans',
+        description: 'Benefits: USD exposure (currency hedge), access to global companies, higher liquidity. How to start: ✓ Open Interactive Brokers account ✓ Transfer via bank (check CBSL limits) ✓ Start with index ETFs ✓ Keep 20-30% internationally for diversification'
+      },
+      {
+        icon: '🚜',
+        title: 'Farming Investment Strategies',
+        description: 'Local: Buy agricultural land in developing areas (Polonnaruwa, Anuradhapura), rent to farmers, earn 8-12% yearly. International: Invest in farmland platforms (FarmTogether, AcreTrader) for US/Australia farmland exposure. Diversify crop types for stability.'
+      },
+      {
+        icon: '⚖️',
+        title: 'Tax-Smart Investing',
+        description: 'In Sri Lanka: ✓ EPF contributions tax deductible ✓ Treasury bill interest tax-free ✓ Stock dividends taxed at 14% ✓ International: Capital gains tax varies (US: 15-20%). Consult tax advisor for optimization. Tax planning can save 10-30% of returns.'
+      }
+    ];
+
+    // Filter recommendations based on user's savings
+    let recommendedSriLanka = sriLankaInvestments;
+    let recommendedInternational = internationalInvestments;
+
+    if (monthlySavings < 10000) {
+      // Low savings - focus on accessible options
+      recommendedSriLanka = sriLankaInvestments.filter(inv => 
+        inv.risk === 'Low' || inv.name.includes('NSB') || inv.name.includes('Unit Trust')
+      );
+      recommendedInternational = [];
+      tips.push({
+        icon: '💪',
+        title: 'Focus on Building Savings First',
+        description: 'Your current savings are low. Focus on increasing income and reducing expenses before aggressive investing.'
+      });
+    } else if (monthlySavings >= 50000) {
+      // High savings - include all options
+      tips.push({
+        icon: '🌟',
+        title: 'Excellent Savings Rate!',
+        description: 'Your strong savings rate allows for diversified investments. Consider allocating across multiple asset classes.'
+      });
+    }
+
+    const predictions = {
+      profile: {
+        monthlyIncome: Math.round(monthlyIncome),
+        monthlyExpenses: Math.round(monthlyExpenses),
+        monthlySavings: Math.round(monthlySavings),
+        savingsRate: parseFloat(savingsRate),
+        riskProfile: riskProfile
+      },
+      sriLanka: recommendedSriLanka,
+      international: monthlySavings >= 10000 ? recommendedInternational : recommendedInternational.slice(0, 3),
+      tips: tips
+    };
+
+    res.json(predictions);
+
+  } catch (error) {
+    console.error('Error generating investment predictions:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate investment predictions',
+      message: error.message 
+    });
   }
 });
 

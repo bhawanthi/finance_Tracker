@@ -1,5 +1,8 @@
-require('dotenv').config();
+const dotenv = require('dotenv');
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 const express = require('express');
+const http = require('node:http');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { initializeScheduler } = require('./services/schedulerService');
@@ -21,17 +24,34 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-	useNewUrlParser: true,
-	useUnifiedTopology: true
-})
-	.then(() => {
-		console.log('MongoDB connected');
-		// Initialize notification scheduler after DB connection
-		initializeScheduler();
-	})
-	.catch(err => console.error('MongoDB connection error:', err));
+const MONGO_RETRY_MS = 10000;
+let schedulerInitialized = false;
+
+function connectToMongo() {
+	const mongoUri = process.env.DB_URI || process.env.MONGO_URI;
+
+	if (!mongoUri) {
+		console.error('MongoDB connection string missing. Set DB_URI or MONGO_URI. Retrying...');
+		setTimeout(connectToMongo, MONGO_RETRY_MS);
+		return;
+	}
+
+	mongoose.connect(mongoUri)
+		.then(() => {
+			console.log('MongoDB connected');
+			if (!schedulerInitialized) {
+				// Initialize notification scheduler once after first successful DB connection
+				initializeScheduler();
+				schedulerInitialized = true;
+			}
+		})
+		.catch(err => {
+			console.error(`MongoDB connection failed (${err.code || 'UNKNOWN'}): ${err.message}. Retrying in ${MONGO_RETRY_MS / 1000}s...`);
+			setTimeout(connectToMongo, MONGO_RETRY_MS);
+		});
+}
+
+connectToMongo();
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -42,6 +62,14 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/chatbot', require('./routes/chatbot'));
+app.use('/api/ai', require('./routes/ai'));
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const DEFAULT_PORT = Number(process.env.PORT || process.env.port || 5000);
+const server = http.createServer(app);
+
+server.on('error', err => {
+	console.error('Server startup error:', err);
+	process.exit(1);
+});
+
+server.listen(DEFAULT_PORT, () => console.log(`Server running on port ${DEFAULT_PORT}`));

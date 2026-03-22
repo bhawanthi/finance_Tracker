@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { setAuthData } from '../utils/auth';
 import './styles/Auth.css';
-import MoneyVueLogo from '../assets/Finance_Logo.png';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +27,7 @@ const Login = () => {
     console.log('Attempting login with:', formData);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const res = await axios.post('/api/auth/login', formData);
       console.log('Login response:', res.data);
       
       if (res.data.token && res.data.user) {
@@ -59,9 +58,7 @@ const Login = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <div className="auth-logo">
-          <img src={MoneyVueLogo} alt="MoneyVue Logo" className="logo-image" />
-        </div>
+        <h1 className="logo-text">MONIVUE</h1>
         <h2 className="auth-title">Welcome Back</h2>
         <form onSubmit={onSubmit} className="auth-form">
           {error && <div className="error-message">{error}</div>}

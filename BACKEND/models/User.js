@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  currency: {
+    type: String,
+    default: 'USD',
+    enum: ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'INR', 'CAD', 'AUD', 'CHF', 'MXN', 'BRL', 'ZAR', 'SGD', 'HKD', 'KRW', 'SEK', 'NOK', 'DKK', 'PLN', 'THB', 'MYR', 'IDR', 'PHP', 'TRY', 'RUB', 'AED', 'SAR', 'EGP', 'NGN', 'KES', 'LKR']
+  },
   password: {
     type: String,
     required: true

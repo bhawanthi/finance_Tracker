@@ -40,11 +40,35 @@ const TransactionModal = ({ isOpen, onClose, type, onSuccess }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/categories?type=${type}`);
+        const response = await fetch(`/api/categories?type=${type}`);
         const data = await response.json();
-        setCategories(data);
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to load categories');
+        }
+
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+          return;
+        }
+
+        // If categories are empty (first run), seed defaults and refetch once.
+        const seedResponse = await fetch('/api/categories/seed', { method: 'POST' });
+        if (!seedResponse.ok) {
+          throw new Error('Failed to initialize categories');
+        }
+
+        const refetchResponse = await fetch(`/api/categories?type=${type}`);
+        const refetchData = await refetchResponse.json();
+
+        if (!refetchResponse.ok) {
+          throw new Error(refetchData.message || 'Failed to load categories after seeding');
+        }
+
+        setCategories(Array.isArray(refetchData) ? refetchData : []);
       } catch (error) {
         console.error('Error fetching categories:', error);
+        setCategories([]);
       }
     };
 
@@ -128,7 +152,7 @@ const TransactionModal = ({ isOpen, onClose, type, onSuccess }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/transactions', {
+      const response = await fetch('/api/transactions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

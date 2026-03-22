@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserData, clearAuthData, formatCurrency } from '../utils/auth';
 import './styles/Budget.css';
-import MoneyVueLogo from '../assets/Finance_Logo.png';
 
 const Budget = () => {
   const [budgets, setBudgets] = useState([]);
@@ -23,14 +22,15 @@ const Budget = () => {
   const [editFormData, setEditFormData] = useState({
     name: '',
     email: '',
-    monthlySalary: ''
+    monthlySalary: '',
+    currency: 'USD'
   });
   const navigate = useNavigate();
 
   const fetchBudgets = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/budgets', {
+      const response = await fetch('/api/budgets', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -49,7 +49,7 @@ const Budget = () => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/categories');
+      const response = await fetch('/api/categories');
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -71,7 +71,8 @@ const Budget = () => {
       setEditFormData({
         name: userData.name || '',
         email: userData.email || '',
-        monthlySalary: userData.monthlySalary || ''
+        monthlySalary: userData.monthlySalary || '',
+        currency: userData.currency || 'USD'
       });
     }
 
@@ -120,7 +121,7 @@ const Budget = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +133,7 @@ const Budget = () => {
       if (response.ok) {
         const updatedUser = await response.json();
         setUser(updatedUser.user);
-        localStorage.setItem('userData', JSON.stringify(updatedUser.user));
+        localStorage.setItem('user', JSON.stringify(updatedUser.user));
         setShowEditProfile(false);
         alert('Profile updated successfully!');
       } else {
@@ -167,7 +168,7 @@ const Budget = () => {
         return;
       }
       
-      const response = await fetch('http://localhost:5000/api/budgets', {
+      const response = await fetch('/api/budgets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +205,7 @@ const Budget = () => {
     if (window.confirm('Are you sure you want to delete this budget?')) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/budgets/${budgetId}`, {
+        const response = await fetch(`/api/budgets/${budgetId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -234,7 +235,7 @@ const Budget = () => {
 
   const handleViewAnalytics = (budget) => {
     // Show budget analytics or navigate to detailed view
-    alert(`Analytics for ${budget.name}\n\nSpent: $${(budget.spent || 0).toFixed(2)}\nBudget: $${budget.amount.toFixed(2)}\nRemaining: $${(budget.amount - (budget.spent || 0)).toFixed(2)}\nUsage: ${Math.round(getBudgetProgressWidth(budget))}%`);
+    alert(`Analytics for ${budget.name}\n\nSpent: ${formatCurrency(budget.spent || 0)}\nBudget: ${formatCurrency(budget.amount)}\nRemaining: ${formatCurrency(budget.amount - (budget.spent || 0))}\nUsage: ${Math.round(getBudgetProgressWidth(budget))}%`);
   };
 
   const getBudgetProgressWidth = (budget) => {
@@ -264,7 +265,6 @@ const Budget = () => {
       <nav className="navbar">
         <div className="nav-brand">
           <div className="logo">
-            <img src={MoneyVueLogo} alt="MoneyVue" className="logo-image" />
             <span className="logo-text">MONIVUE</span>
           </div>
         </div>
@@ -385,18 +385,16 @@ const Budget = () => {
             <div className="overview-content">
               <div className="overview-label">Total Allocated</div>
               <div className="overview-value">
-                ${budgets.reduce((sum, budget) => sum + budget.amount, 0).toFixed(2)}
+                {formatCurrency(budgets.reduce((sum, budget) => sum + budget.amount, 0))}
               </div>
             </div>
           </div>
           
-          <div className="stat-card spent">
-            <div className="stat-icon">
-              <span className="icon">�</span>
-            </div>
-            <div className="stat-content">
-              <div className="stat-label">Total Spent</div>
-              <div className="stat-value">{formatCurrency(budgets.reduce((sum, budget) => sum + (budget.spent || 0), 0))}</div>
+          <div className="overview-card">
+            <div className="overview-icon">💸</div>
+            <div className="overview-content">
+              <div className="overview-label">Total Spent</div>
+              <div className="overview-value">{formatCurrency(budgets.reduce((sum, budget) => sum + (budget.spent || 0), 0))}</div>
             </div>
           </div>
           
@@ -405,7 +403,7 @@ const Budget = () => {
             <div className="overview-content">
               <div className="overview-label">On Track</div>
               <div className="overview-value">
-                {budgets.filter(budget => getBudgetStatus(budget) === 'good').length}
+                {budgets.filter((budget) => getBudgetStatus(budget) === 'on-track').length}
               </div>
             </div>
           </div>
@@ -459,10 +457,10 @@ const Budget = () => {
 
               <div className="goal-amount">
                 <span className="current-amount">
-                  ${(budget.spent || 0).toFixed(2)}
+                  {formatCurrency(budget.spent || 0)}
                 </span>
                 <span className="target-amount">
-                  / ${budget.amount.toFixed(2)}
+                  / {formatCurrency(budget.amount)}
                 </span>
               </div>
 
@@ -491,7 +489,7 @@ const Budget = () => {
 
               <div className="goal-remaining">
                 <span className={`remaining-amount ${getBudgetStatus(budget)}`}>
-                  ${(budget.amount - (budget.spent || 0)).toFixed(2)} remaining
+                  {formatCurrency(budget.amount - (budget.spent || 0))} remaining
                 </span>
               </div>
 
@@ -650,6 +648,49 @@ const Budget = () => {
                   step="0.01"
                   min="0"
                 />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="currency">💱 Preferred Currency</label>
+                <select
+                  id="currency"
+                  name="currency"
+                  value={editFormData.currency}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="USD">🇺🇸 USD - US Dollar</option>
+                  <option value="EUR">🇪🇺 EUR - Euro</option>
+                  <option value="GBP">🇬🇧 GBP - British Pound</option>
+                  <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
+                  <option value="CNY">🇨🇳 CNY - Chinese Yuan</option>
+                  <option value="INR">🇮🇳 INR - Indian Rupee</option>
+                  <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
+                  <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
+                  <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
+                  <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
+                  <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
+                  <option value="ZAR">🇿🇦 ZAR - South African Rand</option>
+                  <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
+                  <option value="HKD">🇭🇰 HKD - Hong Kong Dollar</option>
+                  <option value="KRW">🇰🇷 KRW - South Korean Won</option>
+                  <option value="SEK">🇸🇪 SEK - Swedish Krona</option>
+                  <option value="NOK">🇳🇴 NOK - Norwegian Krone</option>
+                  <option value="DKK">🇩🇰 DKK - Danish Krone</option>
+                  <option value="PLN">🇵🇱 PLN - Polish Zloty</option>
+                  <option value="THB">🇹🇭 THB - Thai Baht</option>
+                  <option value="MYR">🇲🇾 MYR - Malaysian Ringgit</option>
+                  <option value="IDR">🇮🇩 IDR - Indonesian Rupiah</option>
+                  <option value="PHP">🇵🇭 PHP - Philippine Peso</option>
+                  <option value="TRY">🇹🇷 TRY - Turkish Lira</option>
+                  <option value="RUB">🇷🇺 RUB - Russian Ruble</option>
+                  <option value="AED">🇦🇪 AED - UAE Dirham</option>
+                  <option value="SAR">🇸🇦 SAR - Saudi Riyal</option>
+                  <option value="EGP">🇪🇬 EGP - Egyptian Pound</option>
+                  <option value="NGN">🇳🇬 NGN - Nigerian Naira</option>
+                  <option value="KES">🇰🇪 KES - Kenyan Shilling</option>
+                  <option value="LKR">🇱🇰 LKR - Sri Lankan Rupee</option>
+                </select>
               </div>
               
               <div className="form-actions">

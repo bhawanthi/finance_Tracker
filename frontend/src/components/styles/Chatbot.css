@@ -6,11 +6,11 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
   border: none;
   color: white;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(30, 60, 114, 0.4);
+  box-shadow: 0 4px 20px rgba(100, 181, 246, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,7 +21,7 @@
 
 .chatbot-float-button:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 30px rgba(30, 60, 114, 0.6);
+  box-shadow: 0 6px 30px rgba(100, 181, 246, 0.6);
 }
 
 .chatbot-float-button.active {
@@ -42,10 +42,10 @@
 
 @keyframes pulse {
   0%, 100% {
-    box-shadow: 0 4px 20px rgba(30, 60, 114, 0.4);
+    box-shadow: 0 4px 20px rgba(100, 181, 246, 0.4);
   }
   50% {
-    box-shadow: 0 4px 30px rgba(30, 60, 114, 0.7);
+    box-shadow: 0 4px 30px rgba(100, 181, 246, 0.7);
   }
 }
 
@@ -79,7 +79,7 @@
 
 /* Header */
 .chatbot-header {
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
   color: white;
   padding: 20px;
   display: flex;
@@ -234,7 +234,7 @@
 }
 
 .message.user .message-content {
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
   color: white;
   border-bottom-right-radius: 4px;
 }
@@ -304,18 +304,18 @@
   border: 1px solid #e0e0e0;
   border-radius: 20px;
   font-size: 12px;
-  color: #1e3c72;
+  color: #2c5aa0;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .quick-question-btn:hover {
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
   color: white;
-  border-color: #1e3c72;
+  border-color: #64b5f6;
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(30, 60, 114, 0.3);
+  box-shadow: 0 2px 8px rgba(100, 181, 246, 0.3);
 }
 
 /* Input Area */
@@ -342,7 +342,7 @@
 
 .chatbot-input textarea:focus {
   outline: none;
-  border-color: #1e3c72;
+  border-color: #64b5f6;
 }
 
 .chatbot-input textarea:disabled {
@@ -354,7 +354,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
   border: none;
   color: white;
   cursor: pointer;
@@ -367,7 +367,7 @@
 
 .send-button:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+  box-shadow: 0 4px 12px rgba(100, 181, 246, 0.4);
 }
 
 .send-button:disabled {

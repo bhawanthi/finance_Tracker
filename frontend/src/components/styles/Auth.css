@@ -35,6 +35,27 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.logo-text {
+  text-align: center;
+  margin: 0 auto 30px auto;
+  padding: 12px 30px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  border-radius: 12px;
+  display: block;
+  width: fit-content;
+  box-shadow: 0 8px 20px rgba(44, 90, 160, 0.3);
+  transition: all 0.3s ease;
+}
+
+.logo-text:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(44, 90, 160, 0.4);
+}
+
 .auth-title {
   text-align: center;
   margin-bottom: 30px;

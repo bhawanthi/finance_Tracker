@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(46, 90, 160, 0.8);
+  background: rgba(100, 181, 246, 0.6);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   display: flex;
@@ -19,7 +19,7 @@
 .transaction-modal {
   background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(46, 90, 160, 0.3);
+  box-shadow: 0 20px 60px rgba(100, 181, 246, 0.3);
   width: 100%;
   max-width: 600px;
   max-height: 90vh;

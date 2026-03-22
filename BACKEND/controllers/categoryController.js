@@ -208,9 +208,25 @@ const seedDefaultCategories = async (req, res) => {
       }
     ];
 
-    // Clear existing categories and insert defaults
-    await Category.deleteMany({ isDefault: true });
-    await Category.insertMany(defaultCategories);
+    // Idempotent seed: upsert by unique category name to avoid duplicate-key failures.
+    await Category.bulkWrite(
+      defaultCategories.map((category) => ({
+        updateOne: {
+          filter: { name: category.name },
+          update: {
+            $set: {
+              type: category.type,
+              icon: category.icon,
+              color: category.color,
+              subcategories: category.subcategories,
+              isDefault: true,
+              isActive: true
+            }
+          },
+          upsert: true
+        }
+      }))
+    );
 
     res.json({ message: 'Default categories seeded successfully' });
   } catch (error) {

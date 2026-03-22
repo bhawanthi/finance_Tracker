@@ -5,7 +5,7 @@ const User = require('../models/User');
 // Register Controller
 exports.register = async (req, res) => {
   console.log('Registration request received:', req.body);
-  const { name, email, age, jobRole, monthlySalary, password, confirmPassword } = req.body;
+  const { name, email, age, jobRole, monthlySalary, currency, password, confirmPassword } = req.body;
   
   if (!name || !email || !age || !jobRole || !monthlySalary || !password || !confirmPassword) {
     console.log('Missing fields:', { name: !!name, email: !!email, age: !!age, jobRole: !!jobRole, monthlySalary: !!monthlySalary, password: !!password, confirmPassword: !!confirmPassword });
@@ -29,7 +29,8 @@ exports.register = async (req, res) => {
       email, 
       age, 
       jobRole, 
-      monthlySalary, 
+      monthlySalary,
+      currency: currency || 'USD',
       password: hashedPassword 
     });
     
@@ -91,7 +92,8 @@ exports.login = async (req, res) => {
         email: user.email,
         age: user.age,
         jobRole: user.jobRole,
-        monthlySalary: user.monthlySalary
+        monthlySalary: user.monthlySalary,
+        currency: user.currency || 'USD'
       } 
     });
   } catch (err) {
@@ -103,7 +105,7 @@ exports.login = async (req, res) => {
 // Update Profile Controller
 exports.updateProfile = async (req, res) => {
   console.log('Profile update request received:', req.body);
-  const { name, email, monthlySalary, currentPassword, newPassword } = req.body;
+  const { name, email, monthlySalary, currency, currentPassword, newPassword } = req.body;
   
   if (!name || !email) {
     return res.status(400).json({ message: 'Name and email are required' });
@@ -147,7 +149,8 @@ exports.updateProfile = async (req, res) => {
     const updateData = {
       name,
       email,
-      monthlySalary: monthlySalary || 0
+      monthlySalary: monthlySalary || 0,
+      currency: currency || 'USD'
     };
     
     // Add hashed password if changing
@@ -174,7 +177,8 @@ exports.updateProfile = async (req, res) => {
         email: updatedUser.email,
         age: updatedUser.age,
         jobRole: updatedUser.jobRole,
-        monthlySalary: updatedUser.monthlySalary
+        monthlySalary: updatedUser.monthlySalary,
+        currency: updatedUser.currency || 'USD'
       }
     });
   } catch (err) {

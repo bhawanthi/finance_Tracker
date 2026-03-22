@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserData, clearAuthData, formatCurrency } from '../utils/auth';
 import './styles/Goals.css';
-import MoneyVueLogo from '../assets/Finance_Logo.png';
 
 const Goals = () => {
   const [goals, setGoals] = useState([]);
@@ -28,14 +27,17 @@ const Goals = () => {
   const [editFormData, setEditFormData] = useState({
     name: '',
     email: '',
-    monthlySalary: ''
+    monthlySalary: '',
+    currency: 'USD'
   });
   const navigate = useNavigate();
+  const activeGoals = goals.filter((goal) => goal.status === 'active');
+  const achievedGoals = goals.filter((goal) => goal.status === 'completed' || getGoalProgressWidth(goal) >= 100);
 
   const fetchGoals = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/goals', {
+      const response = await fetch('/api/goals?status=all', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -63,7 +65,8 @@ const Goals = () => {
       setEditFormData({
         name: userData.name || '',
         email: userData.email || '',
-        monthlySalary: userData.monthlySalary || ''
+        monthlySalary: userData.monthlySalary || '',
+        currency: userData.currency || 'USD'
       });
     }
 
@@ -112,7 +115,7 @@ const Goals = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +127,7 @@ const Goals = () => {
       if (response.ok) {
         const updatedUser = await response.json();
         setUser(updatedUser.user);
-        localStorage.setItem('userData', JSON.stringify(updatedUser.user));
+        localStorage.setItem('user', JSON.stringify(updatedUser.user));
         setShowEditProfile(false);
         alert('Profile updated successfully!');
       } else {
@@ -153,7 +156,7 @@ const Goals = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/goals', {
+      const response = await fetch('/api/goals', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -200,7 +203,7 @@ const Goals = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/goals/${selectedGoal._id}/contribute`, {
+      const response = await fetch(`/api/goals/${selectedGoal._id}/contribute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +229,7 @@ const Goals = () => {
     if (window.confirm('Are you sure you want to delete this goal?')) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/goals/${goalId}`, {
+        const response = await fetch(`/api/goals/${goalId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -257,7 +260,7 @@ const Goals = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/goals/${editingGoal._id}`, {
+      const response = await fetch(`/api/goals/${editingGoal._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -295,7 +298,7 @@ const Goals = () => {
   const requestGoalAnalysis = async (goal) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/goals/${goal._id}/analysis`, {
+      const response = await fetch(`/api/goals/${goal._id}/analysis`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -315,10 +318,10 @@ const Goals = () => {
     }
   };
 
-  const getGoalProgressWidth = (goal) => {
+  function getGoalProgressWidth(goal) {
     if (!goal.currentAmount || goal.targetAmount === 0) return 0;
     return Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
-  };
+  }
 
   const getGoalStatus = (goal) => {
     const percentage = getGoalProgressWidth(goal);
@@ -360,7 +363,6 @@ const Goals = () => {
       <nav className="navbar">
         <div className="nav-brand">
           <div className="logo">
-            <img src={MoneyVueLogo} alt="MoneyVue" className="logo-image" />
             <span className="logo-text">MONIVUE</span>
           </div>
         </div>
@@ -472,7 +474,7 @@ const Goals = () => {
             <div className="overview-icon">📈</div>
             <div className="overview-content">
               <div className="overview-label">Active Goals</div>
-              <div className="overview-value">{goals.length}</div>
+              <div className="overview-value">{activeGoals.length}</div>
             </div>
           </div>
           <div className="overview-card">
@@ -498,7 +500,7 @@ const Goals = () => {
             <div className="overview-content">
               <div className="overview-label">Achieved</div>
               <div className="overview-value">
-                {goals.filter(goal => getGoalProgressWidth(goal) >= 100).length}
+                {achievedGoals.length}
               </div>
             </div>
           </div>
@@ -507,7 +509,7 @@ const Goals = () => {
 
       {/* Goals Grid */}
       <div className="goals-grid">
-        {goals.length === 0 ? (
+        {activeGoals.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🎯</div>
             <h3>No Goals Set Yet</h3>
@@ -520,7 +522,7 @@ const Goals = () => {
             </button>
           </div>
         ) : (
-          goals.map(goal => (
+          activeGoals.map(goal => (
             <div key={goal._id} className={`goal-card ${getGoalStatus(goal)}`}>
               <div className="goal-header-card">
                 <h3 className="goal-name">{goal.name}</h3>
@@ -1083,6 +1085,49 @@ const Goals = () => {
                   step="0.01"
                   min="0"
                 />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="currency">💱 Preferred Currency</label>
+                <select
+                  id="currency"
+                  name="currency"
+                  value={editFormData.currency}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="USD">🇺🇸 USD - US Dollar</option>
+                  <option value="EUR">🇪🇺 EUR - Euro</option>
+                  <option value="GBP">🇬🇧 GBP - British Pound</option>
+                  <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
+                  <option value="CNY">🇨🇳 CNY - Chinese Yuan</option>
+                  <option value="INR">🇮🇳 INR - Indian Rupee</option>
+                  <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
+                  <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
+                  <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
+                  <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
+                  <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
+                  <option value="ZAR">🇿🇦 ZAR - South African Rand</option>
+                  <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
+                  <option value="HKD">🇭🇰 HKD - Hong Kong Dollar</option>
+                  <option value="KRW">🇰🇷 KRW - South Korean Won</option>
+                  <option value="SEK">🇸🇪 SEK - Swedish Krona</option>
+                  <option value="NOK">🇳🇴 NOK - Norwegian Krone</option>
+                  <option value="DKK">🇩🇰 DKK - Danish Krone</option>
+                  <option value="PLN">🇵🇱 PLN - Polish Zloty</option>
+                  <option value="THB">🇹🇭 THB - Thai Baht</option>
+                  <option value="MYR">🇲🇾 MYR - Malaysian Ringgit</option>
+                  <option value="IDR">🇮🇩 IDR - Indonesian Rupiah</option>
+                  <option value="PHP">🇵🇭 PHP - Philippine Peso</option>
+                  <option value="TRY">🇹🇷 TRY - Turkish Lira</option>
+                  <option value="RUB">🇷🇺 RUB - Russian Ruble</option>
+                  <option value="AED">🇦🇪 AED - UAE Dirham</option>
+                  <option value="SAR">🇸🇦 SAR - Saudi Riyal</option>
+                  <option value="EGP">🇪🇬 EGP - Egyptian Pound</option>
+                  <option value="NGN">🇳🇬 NGN - Nigerian Naira</option>
+                  <option value="KES">🇰🇪 KES - Kenyan Shilling</option>
+                  <option value="LKR">🇱🇰 LKR - Sri Lankan Rupee</option>
+                </select>
               </div>
               
               <div className="form-actions">

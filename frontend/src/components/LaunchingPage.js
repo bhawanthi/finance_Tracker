@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './styles/LaunchingPage.css';
-import MoneyVueLogo from '../assets/Finance_Logo.png';
 
 const LaunchingPage = () => {
   const [isVisible, setIsVisible] = useState(true);
@@ -18,9 +17,6 @@ const LaunchingPage = () => {
     <div className={`launching-container ${!isVisible ? 'fade-out' : ''}`}>
       <div className="launching-content">
         <div className="logo-container">
-          <div className="logo-glow">
-            <img src={MoneyVueLogo} alt="MoneyVue" className="logo-image" />
-          </div>
           <div className="brand-text">
             <h1 className="brand-name">MONIVUE</h1>
             <p className="brand-tagline">TRACK. SAVE. GROW.</p>
